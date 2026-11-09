@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "BSDglab",
+  "name": "BSDglab",
+  "author": "akira",
+  "version": "0.1.0",
+  "description": "Maps accumulated HP loss to DG-LAB Coyote strength via a local PC app.",
+  "gameVersion": "1.40.8",
+  "dependsOn": {
+    "BSIPA": "^4.3.0",
+    "BeatSaberMarkupLanguage": "^1.7.0",
+    "SiraUtil": "^3.0.0"
+  }
+}

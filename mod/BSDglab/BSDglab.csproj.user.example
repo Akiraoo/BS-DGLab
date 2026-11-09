@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- 改成你的 Beat Saber 安裝路徑,存成 BSDglab.csproj.user -->
+    <BeatSaberDir>D:\SteamLibrary\steamapps\common\Beat Saber</BeatSaberDir>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,70 @@
+{
+  "input": "mod",
+  "relay": {
+    "enabled": true,
+    "host": "",
+    "port": 9999
+  },
+  "mod": {
+    "host": "127.0.0.1",
+    "port": 9977,
+    "staleMs": 5000
+  },
+  "dataPuller": {
+    "host": "127.0.0.1",
+    "port": 2946,
+    "staleMs": 8000
+  },
+  "dglab": {
+    "version": "v3",
+    "serverUrl": "ws://127.0.0.1:9999",
+    "appServerUrl": "ws://192.168.0.219:9999",
+    "channels": [
+      "A"
+    ],
+    "waveform": "BUBBLE",
+    "debug": false,
+    "qrEncode": false,
+    "openQrImage": false,
+    "pulseRefreshSec": 20,
+    "slotId": null
+  },
+  "mapping": {
+    "mode": "linear",
+    "scale": "absolute",
+    "coefficient": 0.5,
+    "maxStrength": "auto",
+    "fallbackLimit": 40,
+    "playCapPercent": 85,
+    "healFactor": 1,
+    "decayPerSecond": 0,
+    "maxRisePercentPerSecond": 15,
+    "steps": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        40,
+        10
+      ],
+      [
+        60,
+        20
+      ]
+    ],
+    "healthScale": "auto"
+  },
+  "events": {
+    "zeroOnPause": true,
+    "failStrength": "max",
+    "failDurationMs": 2000
+  },
+  "log": {
+    "losses": true
+  }
+}

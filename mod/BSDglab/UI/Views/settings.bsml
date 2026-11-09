@@ -1,0 +1,21 @@
+<settings-container>
+  <horizontal pref-height='7' horizontal-fit='PreferredSize' vertical-fit='PreferredSize'>
+    <text text='~status' font-size='3.2' align='Center' pref-height='7' />
+  </horizontal>
+  <toggle-setting text='Enabled' value='enabled' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Strength per 1% HP lost' hover-hint='0.5 = +1 strength for every 2% of accumulated HP loss' value='coef' min='0.1' max='2' increment='0.05' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Heal factor' hover-hint='1 = healing cancels loss 1:1' value='heal' min='0.25' max='3' increment='0.25' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Max output (% of app limit)' hover-hint='Normal play never exceeds this. Failing still goes to full for a moment.' value='cap' min='0' max='100' increment='5' integer-only='true' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Max rise (strength/s)' value='rise' min='1' max='60' increment='1' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Fail full-power seconds' value='fail' min='0' max='10' increment='0.5' apply-on-change='true' bind-value='true' />
+  <toggle-setting text='Zero output while paused' value='zeropause' apply-on-change='true' bind-value='true' />
+  <toggle-setting text='No output when No Fail is on' value='nofail' apply-on-change='true' bind-value='true' />
+  <toggle-setting text='Show overlay in game' value='overlay' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Overlay X' value='ox' min='-5' max='5' increment='0.1' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Overlay Y' value='oy' min='0' max='3' increment='0.1' apply-on-change='true' bind-value='true' />
+  <slider-setting text='Overlay Z' value='oz' min='1' max='8' increment='0.1' apply-on-change='true' bind-value='true' />
+  <horizontal pref-height='10' vertical-fit='PreferredSize'>
+    <button text='EMERGENCY STOP' on-click='estop' />
+    <button text='Resume output' on-click='resume' />
+  </horizontal>
+</settings-container>

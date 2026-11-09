@@ -1,0 +1,9 @@
+node_modules/
+qr.png
+*.log
+.DS_Store
+
+# mod 編譯產物與個人路徑設定
+mod/**/bin/
+mod/**/obj/
+*.csproj.user

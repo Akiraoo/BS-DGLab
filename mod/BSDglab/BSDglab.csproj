@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <AssemblyName>BSDglab</AssemblyName>
+    <RootNamespace>BSDglab</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <DebugType>portable</DebugType>
+    <!-- 遊戲資料夾:注意 .csproj.user 是在本檔『之後』才被載入,所以下面一律直接用 $(BeatSaberDir),不要另外衍生屬性。用環境變數 BeatSaberDir,或複製 BSDglab.csproj.user.example 成 BSDglab.csproj.user 後修改 -->
+    <BeatSaberDir Condition="'$(BeatSaberDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Beat Saber</BeatSaberDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Main"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Main.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GameplayCore"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\GameplayCore.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BGLib.AppFlow"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BGLib.AppFlow.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="HMLib"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMLib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="HMUI"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMUI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="IPA.Loader"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\IPA.Loader.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Zenject"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Zenject.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Zenject-usage"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Zenject-usage.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BSML"><HintPath>$(BeatSaberDir)\Plugins\BSML.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SiraUtil"><HintPath>$(BeatSaberDir)\Plugins\SiraUtil.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="manifest.json"><LogicalName>BSDglab.manifest.json</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="UI\Views\settings.bsml" />
+  </ItemGroup>
+
+  <Target Name="CheckBeatSaberDir" BeforeTargets="ResolveAssemblyReferences;CoreCompile">
+    <Error Condition="!Exists('$(BeatSaberDir)\Beat Saber_Data\Managed\Main.dll')" Text="找不到 Beat Saber:'$(BeatSaberDir)'(缺少 Beat Saber_Data\Managed\Main.dll)。請修改 BSDglab.csproj.user 裡的 BeatSaberDir。" />
+    <Error Condition="!Exists('$(BeatSaberDir)\Plugins\BSML.dll') Or !Exists('$(BeatSaberDir)\Plugins\SiraUtil.dll')" Text="Plugins 資料夾缺少 BSML.dll 或 SiraUtil.dll,請先用 ModAssistant / BSManager 安裝 BSIPA、BSML、SiraUtil。" />
+  </Target>
+
+  <!-- 編譯完直接複製到遊戲的 Plugins 資料夾 -->
+  <Target Name="CopyToPlugins" AfterTargets="Build" Condition="Exists('$(BeatSaberDir)\Plugins')">
+    <Copy SourceFiles="$(OutputPath)BSDglab.dll" DestinationFolder="$(BeatSaberDir)\Plugins" />
+  </Target>
+</Project>
