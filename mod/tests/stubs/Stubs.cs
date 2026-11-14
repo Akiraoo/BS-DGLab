@@ -43,6 +43,25 @@ namespace BeatSaberMarkupLanguage.Attributes
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)] public class UIValueAttribute : Attribute { public UIValueAttribute(string n) { } }
     [AttributeUsage(AttributeTargets.Method)] public class UIActionAttribute : Attribute { public UIActionAttribute(string n) { } }
+    [AttributeUsage(AttributeTargets.Field)] public class UIComponent : Attribute { public UIComponent(string id) { } }
+}
+namespace BeatSaberMarkupLanguage.Components.Settings
+{
+    public class DropDownListSetting : UnityEngine.MonoBehaviour
+    {
+        public System.Collections.IList Values { get; set; }
+        public void UpdateChoices() { }
+        public void ReceiveValue() { }
+    }
+}
+namespace IPA.Utilities { public static class UnityGame { public static string UserDataPath = "UserData"; } }
+namespace BeatSaberMarkupLanguage.FloatingScreen
+{
+    public class FloatingScreen : UnityEngine.MonoBehaviour
+    {
+        public bool ShowHandle { get; set; }
+        public static FloatingScreen CreateFloatingScreen(UnityEngine.Vector2 screenSize, bool createHandle, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, float curvatureRadius = 0f, bool hasBackground = false) { return new FloatingScreen(); }
+    }
 }
 namespace BeatSaberMarkupLanguage.Settings
 {
@@ -65,10 +84,14 @@ namespace UnityEngine
 {
     public struct Vector2 { public float x, y; public Vector2(float x, float y) { this.x = x; this.y = y; } public static Vector2 zero = new Vector2(0, 0), one = new Vector2(1, 1); }
     public struct Vector3 { public float x, y, z; public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; } public static Vector3 one = new Vector3(1, 1, 1); public static Vector3 operator *(Vector3 a, float f) { return new Vector3(a.x * f, a.y * f, a.z * f); } }
-    public class Object { public static void DontDestroyOnLoad(Object o) { } public static void Destroy(Object o) { } public string name; public static implicit operator bool(Object o) { return !ReferenceEquals(o, null); } }
-    public class Component : Object { public Transform transform; public T GetComponent<T>() where T : class, new() { return new T(); } }
-    public class Transform : Component { public Vector3 position, localScale; public void SetParent(Transform p, bool worldPositionStays) { } }
-    public class RectTransform : Transform { public Vector2 sizeDelta, anchorMin, anchorMax, offsetMin, offsetMax; }
+    public struct Quaternion { public static Quaternion Euler(float x, float y, float z) { return new Quaternion(); } }
+    public struct Color { public float r, g, b, a; public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; } public static Color white = new Color(1, 1, 1, 1); }
+    public static class Mathf { public static float Abs(float v) { return v < 0 ? -v : v; } public static float Clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); } }
+    public class Object { public static void DontDestroyOnLoad(Object o) { } public static void Destroy(Object o) { } public string name; public static implicit operator bool(Object o) { return !ReferenceEquals(o, null); } public static bool operator ==(Object a, Object b) { return ReferenceEquals(a, b); } public static bool operator !=(Object a, Object b) { return !ReferenceEquals(a, b); } public override bool Equals(object o) { return ReferenceEquals(this, o); } public override int GetHashCode() { return 0; } }
+    public class Material : Object { }
+    public class Component : Object { public Transform transform; public GameObject gameObject; public T GetComponent<T>() where T : class, new() { return new T(); } }
+    public class Transform : Component { public Vector3 position, localScale, eulerAngles; public Quaternion rotation; public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class RectTransform : Transform { public Vector2 sizeDelta, anchorMin, anchorMax, offsetMin, offsetMax, pivot, anchoredPosition; }
     public class GameObject : Object
     {
         public Transform transform = new Transform();
@@ -82,13 +105,17 @@ namespace UnityEngine
     public static class Time { public static float unscaledDeltaTime; }
     public static class Resources { public static T[] FindObjectsOfTypeAll<T>() where T : class { return new T[0]; } }
 }
+namespace UnityEngine.UI
+{
+    public class Image : UnityEngine.Component { public UnityEngine.Color color; public UnityEngine.Material material; public bool raycastTarget; public UnityEngine.RectTransform rectTransform = new UnityEngine.RectTransform(); }
+}
 namespace TMPro
 {
     public enum TextAlignmentOptions { TopLeft }
     public class TMP_FontAsset : UnityEngine.Object { }
     public class TextMeshProUGUI : UnityEngine.Component
     {
-        public TMP_FontAsset font; public float fontSize; public TextAlignmentOptions alignment; public bool enableWordWrapping; public string text;
+        public bool raycastTarget; public TMP_FontAsset font; public float fontSize; public TextAlignmentOptions alignment; public bool enableWordWrapping; public string text;
         public UnityEngine.RectTransform rectTransform = new UnityEngine.RectTransform();
     }
 }

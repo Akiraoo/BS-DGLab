@@ -36,7 +36,7 @@ s.on('error', (e) => {
 await new Promise((r) => s.once('connect', r));
 console.log(`${ts()} 已連上`);
 send({ t: 'hello', v: 1, game: 'fake', mod: 'fake-mod' });
-send({ t: 'cfg', playCapPercent: 85, maxRisePerSecond: 15, failDurationMs: 2000, zeroOnPause: true });
+send({ t: 'cfg', playCapPercent: 85, maxRisePerSecond: 15, failDurationMs: 2000, zeroOnPause: true, channels: process.env.CHANNELS ?? 'A', waveform: process.env.WAVEFORM ?? 'BUBBLE' });
 await sleep(500);
 send({ t: 'state', s: 'start' });
 

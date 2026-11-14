@@ -27,5 +27,10 @@ namespace BSDglab.Core
         float MaxRisePerSecond { get; }
         float FailSeconds { get; }
         bool ZeroOnPause { get; }
+        /// <summary>要輸出的通道</summary>
+        bool ChannelA { get; }
+        bool ChannelB { get; }
+        /// <summary>波形名稱(PC 程式認得的內建名稱,例如 BUBBLE、PULSATING)</summary>
+        string Waveform { get; }
     }
 }

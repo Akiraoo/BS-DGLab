@@ -9,6 +9,8 @@ namespace BSDglab.Configuration
     public class PluginConfig : IEngineSettings
     {
         public virtual bool Enabled { get; set; } = true;
+        /// <summary>介面語言:en / zh-TW / zh-CN</summary>
+        public virtual string Language { get; set; } = "en";
 
         // PC 程式的位址(同一台電腦就不用改)
         public virtual string AppHost { get; set; } = "127.0.0.1";
@@ -25,6 +27,11 @@ namespace BSDglab.Configuration
         /// <summary>過關失敗時滿檔的秒數</summary>
         public virtual float FailSeconds { get; set; } = 2f;
         public virtual bool ZeroOnPause { get; set; } = true;
+        /// <summary>要輸出的通道(進遊戲後以這裡為準,會蓋過 PC 程式 config.json 的 dglab.channels)</summary>
+        public virtual bool ChannelA { get; set; } = true;
+        public virtual bool ChannelB { get; set; } = false;
+        /// <summary>波形(郊狼 App 的經典波形,見 Core/Waveforms.cs 的清單;進遊戲後以這裡為準)</summary>
+        public virtual string Waveform { get; set; } = "BUBBLE";
         /// <summary>開了 No Fail(血量歸零也不會失敗)就整關不輸出</summary>
         public virtual bool DisableOnNoFail { get; set; } = true;
 
@@ -32,8 +39,15 @@ namespace BSDglab.Configuration
         public virtual bool DebugLog { get; set; } = true;
 
         public virtual bool ShowOverlay { get; set; } = true;
-        public virtual float OverlayX { get; set; } = -2.0f;
-        public virtual float OverlayY { get; set; } = 1.0f;
-        public virtual float OverlayZ { get; set; } = 2.5f;
+        // 疊層位置(公尺)。預設和遊戲 HUD 同一個深度(Z = 7),在左側 HUD 的上方
+        public virtual float HudX { get; set; } = -3.2f;
+        public virtual float HudY { get; set; } = 2.4f;
+        public virtual float HudZ { get; set; } = 7.0f;
+        /// <summary>疊層大小倍率</summary>
+        public virtual float HudScale { get; set; } = 1.0f;
+        /// <summary>疊層的角度(度)。在設定頁的編輯模式拖動把手時會自動寫入</summary>
+        public virtual float HudRotX { get; set; } = 0f;
+        public virtual float HudRotY { get; set; } = 0f;
+        public virtual float HudRotZ { get; set; } = 0f;
     }
 }

@@ -1,7 +1,7 @@
 {
   "name": "bs-dglab",
-  "version": "1.0.0",
-  "description": "Beat Saber (BSDataPuller) -> DG-LAB Coyote bridge: intensity follows health lost",
+  "version": "0.1.0",
+  "description": "Beat Saber mod + PC app: DG-LAB Coyote 3.0 strength follows accumulated HP loss",
   "type": "module",
   "main": "src/index.js",
   "scripts": {

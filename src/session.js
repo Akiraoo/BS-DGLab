@@ -1,6 +1,7 @@
 // mod 模式的 app 端狀態機。累計扣血、強度計算都在 mod 裡;這裡只負責「安全」與「送到裝置」:
 //   天花板、上升限速、暫停/過關歸零、失敗滿檔、mod 斷線或沒資料就歸零、緊急停止。
 import { rampToward } from './penalty.js';
+import { registerPulse, PULSE_KEY_PREFIX } from './waveform.js';
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
@@ -41,6 +42,9 @@ export class ModSession {
       case 'cfg':
         this.applySettings(m);
         break;
+      case 'pulse':
+        this._onPulse(m);
+        break;
       case 'state':
         this._onState(String(m.s));
         break;
@@ -63,6 +67,20 @@ export class ModSession {
     }
   }
 
+  /** mod 傳來一個導入的波形(郊狼 App 的 .pulse) */
+  _onPulse(m) {
+    const name = typeof m.name === 'string' ? m.name.trim() : '';
+    if (!name || typeof m.data !== 'string') return;
+    try {
+      const { raw, truncated } = registerPulse(name, m.data);
+      this.log(`[mod] 導入波形「${name}」:${raw.length} 個影格,一輪 ${(raw.length / 10).toFixed(1)} 秒${truncated ? '(太長,已截斷)' : ''}`);
+      const key = PULSE_KEY_PREFIX + name;
+      if (this.dev.waveKey === key) this.dev.setWaveform?.(key, true); // 正在用這個波形 → 換成新內容
+    } catch (e) {
+      this.log(`[mod] 導入波形「${name}」失敗:${e.message}`);
+    }
+  }
+
   applySettings(m) {
     const s = this.settings;
     const p = num(m.playCapPercent);
@@ -75,6 +93,10 @@ export class ModSession {
     const f = num(m.failDurationMs);
     if (f != null) s.failDurationMs = Math.max(0, Math.min(10_000, f)); // 失敗滿檔最長 10 秒
     if (typeof m.zeroOnPause === 'boolean') s.zeroOnPause = m.zeroOnPause;
+    // 通道開關(mod 設定頁):"A"、"B"、"A,B" 或空字串(全部不輸出)
+    // 波形(mod 設定頁的選單):內建名稱或 waveforms/ 裡的自訂名稱
+    if (typeof m.waveform === 'string' && m.waveform) this.dev.setWaveform?.(m.waveform);
+    if (typeof m.channels === 'string') this.dev.setChannels?.(m.channels.split(',').filter(Boolean));
     this.log(`[mod] 設定: 天花板 ${s.playCapPercent}% | 上升 ${s.maxRisePerSecond}/秒 | 失敗滿檔 ${s.failDurationMs}ms | 暫停歸零 ${s.zeroOnPause}`);
   }
 
@@ -151,6 +173,20 @@ export class ModSession {
   }
 
   status() {
+    // 疊層用的通道與波形資訊(扁平欄位,mod 端的 JSON 解析比較簡單)
+    const extra = {};
+    const info = this.dev.channelInfo?.() ?? [];
+    if (info.length) {
+      extra.chans = info.map((c) => c.ch).join(',');
+      for (const c of info) {
+        extra[`cur${c.ch}`] = c.cur;
+        extra[`ceil${c.ch}`] = c.ceil;
+        extra[`lim${c.ch}`] = c.lim;
+      }
+    }
+    if (this.dev.waveName) extra.wave = this.dev.waveName;
+    if (this.dev.waveKey) extra.waveKey = this.dev.waveKey;
+    if (this.dev.waveShape?.length) extra.shape = this.dev.waveShape.join(',');
     return {
       t: 'status',
       phase: this.phase,
@@ -161,6 +197,7 @@ export class ModSession {
       limit: this.dev.limitFor?.(this.dev.channels?.[0] ?? 'A') ?? null,
       paired: Boolean(this.dev.attached),
       loss: this.loss,
+      ...extra,
     };
   }
 

@@ -30,6 +30,8 @@ namespace BSDglab.Game
 
         public void Initialize()
         {
+            // 設定頁的編輯面板不帶進關卡
+            HudEditor.Close();
             var engine = Plugin.Engine;
             if (engine == null) return;
             var mods = setupData != null ? setupData.gameplayModifiers : null;
@@ -40,8 +42,8 @@ namespace BSDglab.Game
                 Plugin.Log.Info("No Fail is on: DG-LAB output disabled for this level");
                 if (Plugin.Cfg.ShowOverlay)
                 {
-                    hud = new Hud(Plugin.Cfg.OverlayX, Plugin.Cfg.OverlayY, Plugin.Cfg.OverlayZ);
-                    hud.SetText("DG-LAB: No Fail on - output disabled");
+                    hud = new Hud();
+                    hud.ShowMessage(BSDglab.Core.L.T("hud_nofail"));
                 }
                 return;
             }
@@ -61,8 +63,8 @@ namespace BSDglab.Game
             }
             if (Plugin.Cfg.ShowOverlay)
             {
-                hud = new Hud(Plugin.Cfg.OverlayX, Plugin.Cfg.OverlayY, Plugin.Cfg.OverlayZ);
-                hud.SetText(Hud.Format(engine));
+                hud = new Hud();
+                hud.Refresh(engine);
             }
         }
 
@@ -83,11 +85,12 @@ namespace BSDglab.Game
                 }
             }
             if (hud == null) return;
-            hudAcc += UnityEngine.Time.unscaledDeltaTime;
+            float dt = UnityEngine.Time.unscaledDeltaTime;
+            hud.Animate(dt);
+            hudAcc += dt;
             if (hudAcc < 0.2f) return;
             hudAcc = 0f;
-            var engine = Plugin.Engine;
-            if (engine != null) hud.SetText(Hud.Format(engine));
+            hud.Refresh(Plugin.Engine);
         }
 
         void OnEnergyChanged(float energy)

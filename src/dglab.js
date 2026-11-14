@@ -9,9 +9,14 @@ import {
   DGLAB_SOCKET_VERSION,
   V3Channel,
   V4Channel,
-  COYOTE_WAVEFORMS,
-  COYOTE_WAVEFORM,
 } from 'dglab-kit';
+import { loadWaveform, isPulseKey, pulseName, PULSE_KEY_PREFIX } from './waveform.js';
+
+/** 波形代號正規化:內建 / 自訂 JSON 轉大寫;導入的 .pulse 保留檔名原樣 */
+export function normWaveKey(name) {
+  const k = String(name ?? '').trim();
+  return isPulseKey(k) ? PULSE_KEY_PREFIX + pulseName(k) : k.toUpperCase();
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -46,9 +51,69 @@ export class DglabController extends EventEmitter {
     this.attached = false;
     this.pulseTimer = null;
 
-    const raw = COYOTE_WAVEFORMS[COYOTE_WAVEFORM[cfg.waveform ?? 'BUBBLE']]?.raw;
-    if (!raw?.length) throw new Error(`找不到波形 ${cfg.waveform},請改 config.dglab.waveform`);
-    this.waveformRaw = raw;
+    // 波形:內建名稱,或 waveforms/<名稱>.json 的自訂波形(找不到會丟出說明清楚的錯誤)
+    const wave = loadWaveform(cfg.waveform ?? 'BUBBLE');
+    this.waveKey = normWaveKey(cfg.waveform ?? 'BUBBLE');
+    this.waveformRaw = wave.raw;
+    this.waveName = wave.name;
+    this.waveShape = waveShape(wave.raw);
+    if (wave.custom) this.log(`[dglab] 使用自訂波形「${wave.name}」(${wave.raw.length} 個影格,一輪 ${(wave.raw.length / 10).toFixed(1)} 秒)`);
+  }
+
+  /**
+   * 執行中換波形(mod 設定頁的波形選單)。名稱找不到時維持原本的波形並回傳 false。
+   * 正在輸出時會先清掉 App 裡排隊的舊波形,再送新的。
+   */
+  setWaveform(name, force = false) {
+    const key = normWaveKey(name);
+    if (!key || (key === this.waveKey && !force)) return true;
+    let wave;
+    try {
+      wave = loadWaveform(key);
+    } catch (e) {
+      this.log(`[dglab] 換波形失敗:${e.message}`);
+      return false;
+    }
+    this.waveKey = key;
+    this.waveformRaw = wave.raw;
+    this.waveName = wave.name;
+    this.waveShape = waveShape(wave.raw);
+    this.log(`[dglab] 波形: ${wave.name}`);
+    if (this.pulseTimer && this.attached) {
+      for (const ch of this.channels) {
+        if (this.isV3) this.socket.clearPulse(V3Channel[ch]);
+        else this._safe(this.socket.clearPulse(this.clientId, this.slotId, V4Channel[ch]), 'clearPulse', true);
+      }
+      this._sendPulseOnce();
+    }
+    return true;
+  }
+
+  /**
+   * 執行中切換要控制的通道(mod 設定頁的 A / B 開關)。
+   * 被關掉的通道先歸零並清掉波形;新開的通道補上波形並套用目前強度。空陣列 = 全部不輸出。
+   */
+  setChannels(list) {
+    const next = [...new Set((list ?? []).map((c) => String(c).trim().toUpperCase()).filter((c) => c === 'A' || c === 'B'))];
+    if (next.join() === this.channels.join()) return;
+    for (const ch of this.channels) {
+      if (next.includes(ch)) continue;
+      this._setChannel(ch, 0, true);
+      if (this.attached) {
+        if (this.isV3) this.socket.clearPulse(V3Channel[ch]);
+        else this._safe(this.socket.clearPulse(this.clientId, this.slotId, V4Channel[ch]), 'clearPulse', true);
+      }
+    }
+    this.channels = next;
+    for (const ch of next) this.current[ch] ??= 0;
+    this.log(`[dglab] 控制通道: ${next.join(', ') || '(無)'}`);
+    if (this.pulseTimer) this._sendPulseOnce();
+    this._applyLevel();
+  }
+
+  /** 給 mod 疊層用:每個通道目前的強度、天花板、App 上限 */
+  channelInfo() {
+    return this.channels.map((ch) => ({ ch, cur: this.current[ch] ?? 0, ceil: this._ceiling(ch), lim: this.limitFor(ch) }));
   }
 
   async connect() {
@@ -356,4 +421,20 @@ export class DglabController extends EventEmitter {
     }
     setTimeout(() => this.socket?.destroy?.(), 150);
   }
+}
+
+/**
+ * 波形的強度輪廓:每 100ms 一個值(0~100),給疊層畫波形用。
+ * raw 的每一筆是 16 個十六進位字元:前 4 位元組是頻率、後 4 位元組是強度(各 25ms)。最多取 80 筆。
+ */
+export function waveShape(raw) {
+  const out = [];
+  for (const frame of raw ?? []) {
+    if (typeof frame !== 'string' || frame.length < 16) continue;
+    let sum = 0;
+    for (let i = 8; i < 16; i += 2) sum += parseInt(frame.slice(i, i + 2), 16) || 0;
+    out.push(Math.max(0, Math.min(100, Math.round(sum / 4))));
+    if (out.length >= 80) break;
+  }
+  return out;
 }

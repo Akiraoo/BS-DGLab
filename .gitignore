@@ -1,9 +1,31 @@
+# Node
 node_modules/
-qr.png
+npm-debug.log*
 *.log
-.DS_Store
+
+# PC 程式執行時產生的檔案
+qr.png
 
 # mod 編譯產物與個人路徑設定
 mod/**/bin/
 mod/**/obj/
 *.csproj.user
+mod/tests/*.exe
+
+# 打包 Release 用的暫存
+dist/
+release/
+*.zip
+
+# 編輯器 / 系統
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code 個人設定(專案共用的 .claude/settings.json 仍會提交)
+.claude/settings.local.json

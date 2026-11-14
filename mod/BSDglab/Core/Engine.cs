@@ -18,6 +18,16 @@ namespace BSDglab.Core
             public int Current;      // 目前實際輸出的強度
             public int Ceiling;      // 一般遊玩的強度天花板
             public int Limit;        // 手機 App 設定的強度上限
+            public ChannelStatus[] Channels = new ChannelStatus[0]; // 各通道(A / B)的狀態,給疊層用
+            public string Wave = "";            // 波形名稱(PC 程式給的英文名)
+            public string WaveKey = "";         // 波形代號(內建波形可用來查翻譯)
+            public int[] Shape = new int[0];    // 波形強度輪廓:每 100ms 一個值(0~100)
+        }
+
+        public sealed class ChannelStatus
+        {
+            public string Name = "A";
+            public int Current, Ceiling, Limit;
         }
 
         const float SendInterval = 0.1f;   // 遊玩中每 100ms 送一次強度(同時是心跳)
@@ -124,7 +134,16 @@ namespace BSDglab.Core
                 "playCapPercent", cfg.PlayCapPercent,
                 "maxRisePerSecond", cfg.MaxRisePerSecond,
                 "failDurationMs", (int)Math.Round(cfg.FailSeconds * 1000f),
-                "zeroOnPause", cfg.ZeroOnPause));
+                "zeroOnPause", cfg.ZeroOnPause,
+                "waveform", cfg.Waveform ?? "",
+                "channels", (cfg.ChannelA ? "A" : "") + (cfg.ChannelA && cfg.ChannelB ? "," : "") + (cfg.ChannelB ? "B" : "")));
+        }
+
+        /// <summary>把導入的波形(.pulse 原文)傳給 PC 程式解碼;連上時與重新掃描資料夾後呼叫</summary>
+        public void SendPulses()
+        {
+            foreach (var p in PulseLibrary.Items)
+                link.Send(Json.Build("t", "pulse", "name", p.Name, "data", p.Data));
         }
 
         // ---------- 每幀 ----------
@@ -176,6 +195,7 @@ namespace BSDglab.Core
             inbox.Enqueue(delegate
             {
                 link.Send(Json.Build("t", "hello", "v", 1, "game", gameVersion, "mod", "BSDglab"));
+                SendPulses();   // 先傳波形,cfg 裡選的導入波形才找得到
                 PushSettings();
                 if (playing)
                 {
@@ -202,8 +222,45 @@ namespace BSDglab.Core
                 Current = (int)(Json.Num(m, "current") ?? 0),
                 Ceiling = (int)(Json.Num(m, "ceiling") ?? 0),
                 Limit = (int)(Json.Num(m, "limit") ?? 0),
+                Wave = Json.Str(m, "wave") ?? "",
+                WaveKey = Json.Str(m, "waveKey") ?? "",
+                Shape = ParseInts(Json.Str(m, "shape")),
             };
+            var names = (Json.Str(m, "chans") ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (names.Length > 0)
+            {
+                s.Channels = new ChannelStatus[names.Length];
+                for (int i = 0; i < names.Length; i++)
+                {
+                    string n = names[i].Trim();
+                    s.Channels[i] = new ChannelStatus
+                    {
+                        Name = n,
+                        Current = (int)(Json.Num(m, "cur" + n) ?? 0),
+                        Ceiling = (int)(Json.Num(m, "ceil" + n) ?? 0),
+                        Limit = (int)(Json.Num(m, "lim" + n) ?? 0),
+                    };
+                }
+            }
+            else
+            {
+                // 舊版 PC 程式沒有通道資訊:當成單一 A 通道
+                s.Channels = new[] { new ChannelStatus { Name = "A", Current = s.Current, Ceiling = s.Ceiling, Limit = s.Limit } };
+            }
             status = s;
+        }
+
+        static int[] ParseInts(string csv)
+        {
+            if (string.IsNullOrEmpty(csv)) return new int[0];
+            var parts = csv.Split(',');
+            var list = new List<int>(parts.Length);
+            foreach (var p in parts)
+            {
+                int v;
+                if (int.TryParse(p.Trim(), out v)) list.Add(v < 0 ? 0 : (v > 100 ? 100 : v));
+            }
+            return list.ToArray();
         }
 
         public void Dispose()

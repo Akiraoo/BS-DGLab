@@ -17,6 +17,9 @@ class Settings : IEngineSettings
     public float MaxRisePerSecond { get { return 15f; } }
     public float FailSeconds { get { return 2f; } }
     public bool ZeroOnPause { get { return true; } }
+    public bool ChannelA { get { return true; } }
+    public bool ChannelB { get { return false; } }
+    public string Waveform { get { return "BUBBLE"; } }
 }
 
 class FakeLink : IAppLink
@@ -61,6 +64,26 @@ static class Program
         T.Eq(s, "{\"t\":\"level\",\"strength\":12,\"loss\":24.5,\"ok\":true,\"q\":\"a\\\"b\"}", "Json.Build");
         var d = Json.Parse("{\"t\":\"status\",\"current\":7,\"paired\":true,\"x\":null,\"s\":\"hi\\n\",\"f\":-1.5e1}");
         T.Eq(Json.Str(d, "t"), "status", "Json.Parse 字串");
+        // 多語系
+        L.Set("zh-TW"); T.Eq(L.T("estop"), "緊急停止", "繁中文字");
+        T.Eq(Waveforms.LabelOf("PULSATING"), "連擊", "波形名稱(繁中)");
+        T.Eq(Waveforms.KeyOf("连击"), "PULSATING", "任何語言的名稱都能查回代號");
+        L.Set("zh-CN"); T.Eq(L.T("st_ok", 40, 34).Contains("40") && L.T("st_ok", 40, 34).Contains("34"), true, "帶參數的文字");
+        T.Eq(Waveforms.LabelOf("my-wave", "My Wave"), "My Wave", "自訂波形用 PC 給的名稱");
+        // 導入的 .pulse:選單列在官方 24 個後面、名稱 = 檔名、代號 = pulse:檔名;切語言時同一個 List 換內容
+        PulseLibrary.Set(new[] { new PulseLibrary.Item { Name = "進4", Data = "Dungeonlab+pulse:0,1,8=0,0,0,1,1/0-1" } });
+        var waves = Waveforms.Labels();
+        T.Eq(waves.Count, 25, "選單 = 24 個官方 + 1 個導入");
+        T.Eq((string)waves[24], "進4", "導入波形用檔名");
+        T.Eq(Waveforms.KeyOf("進4"), "pulse:進4", "檔名 → pulse:檔名");
+        T.Eq(Waveforms.LabelOf("pulse:進4"), "進4", "pulse:檔名 → 檔名");
+        T.Eq(Waveforms.Exists("pulse:進4") && !Waveforms.Exists("pulse:不存在") && Waveforms.Exists("BUBBLE"), true, "Exists");
+        L.Set("en"); Waveforms.Fill(waves); T.Eq((string)waves[1], "Bubble", "切語言:同一個清單換成新語言");
+        L.Set("zh-CN");
+        PulseLibrary.Set(new PulseLibrary.Item[0]);
+        foreach (var k in L.Keys) { for (int i = 0; i < 3; i++) { L.Index = i; if (string.IsNullOrEmpty(L.T(k))) T.Eq(k, "", "缺翻譯"); } }
+        L.Set("xx"); T.Eq(L.T("estop"), "EMERGENCY STOP", "不認得的語言退回英文");
+        T.Eq(L.T("no_such_key"), "no_such_key", "沒有的 key 原樣回傳");
         T.Eq(Json.Num(d, "current"), (double?)7, "Json.Parse 數字");
         T.Eq(Json.Bool(d, "paired"), (bool?)true, "Json.Parse 布林");
         T.Eq(Json.Num(d, "f"), (double?)(-15), "Json.Parse 科學記號");
@@ -115,6 +138,15 @@ static class Program
         link.FireMessage("{\"t\":\"status\",\"phase\":\"playing\",\"paired\":true,\"current\":3,\"ceiling\":85,\"limit\":100,\"emergency\":false}");
         e.Tick(0.11f);
         T.Eq(e.Status != null ? e.Status.Ceiling : -1, 85, "收到 status");
+        T.Eq(e.Status.Channels.Length, 1, "沒有通道資訊時當成單一 A 通道");
+        link.FireMessage("{\"t\":\"status\",\"paired\":true,\"current\":3,\"ceiling\":34,\"limit\":40,\"chans\":\"A,B\",\"curA\":3,\"ceilA\":34,\"limA\":40,\"curB\":1,\"ceilB\":17,\"limB\":20,\"wave\":\"Bubble\",\"shape\":\"0,100,50\"}");
+        e.Tick(0.01f);
+        T.Eq(e.Status.Channels.Length, 2, "status 通道數");
+        T.Eq(e.Status.Channels[1].Name + e.Status.Channels[1].Ceiling, "B17", "status B 通道");
+        T.Eq(e.Status.Wave, "Bubble", "status 波形名稱");
+        T.Eq(e.Status.Shape.Length == 3 ? e.Status.Shape[1] : -1, 100, "status 波形輪廓");
+        link.FireMessage("{\"t\":\"status\",\"phase\":\"playing\",\"paired\":true,\"current\":3,\"ceiling\":85,\"limit\":100,\"emergency\":false}");
+        e.Tick(0.01f);
         e.OnEnergy(1f); e.OnEnergy(0f);   // 回滿再瞬間扣光:累計 100 → 強度 50(天花板 85,不受限)
         e.Tick(0.11f);
         T.Eq(Json.Num(Json.Parse(link.Sent[link.Sent.Count - 1]), "strength"), (double?)50, "上限 100(天花板 85)時累計 100 → 強度 50");
